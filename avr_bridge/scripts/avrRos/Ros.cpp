@@ -41,8 +41,8 @@ void Ros::subscribe(char *topic, ros_cb funct, Msg * msg)
 
 void Ros::publish(Publisher pub, Msg * msg)
 {
-	uint16_t bytes = msg->serialize(this->outBuffer);
-	this->send(outBuffer, bytes, 0, pub);
+	uint16_t byte_len = msg->serialize(this->outBuffer);
+	this->send_pkt(PT_TOPIC, pub, this->outBuffer, byte_len);
 }
 
 void Ros::resetStateMachine()
@@ -54,7 +54,6 @@ void Ros::resetStateMachine()
 
 void Ros::spin()
 {
-
 	int com_byte = getc(ros_io);
 
 	while (com_byte != -1) {
@@ -72,7 +71,7 @@ void Ros::spin()
 			if (packet_data_left <= 0) {
 				resetStateMachine();
 				switch(header->packet_type) {
-				case 0: //topic
+				case PT_TOPIC:
 					//ie its a valid topic tag
 					//then deserialize the msg
 					this->msgList[header->topic_tag]->
@@ -83,9 +82,9 @@ void Ros::spin()
 									  [header->
 									   topic_tag]);
 					break;
-				case 1: //service
+				case PT_SERVICE:
 					break;
-				case 255: //getID
+				case PT_GETID:
 					this->getID();
 					break;
 				}
@@ -106,26 +105,29 @@ Publisher Ros::advertise(char *topic)
 	return getTopicTag(topic);
 }
 
+void Ros::send_pkt(uint8_t packet_type, uint8_t topic_id,
+               uint8_t *data, uint16_t data_len)
+{
+	fputc(packet_type, ros_io);
+	fputc(topic_id, ros_io);
+
+	/* FIXME: endianness */
+	fwrite(&length, 1, sizeof(length), ros_io);
+	fwrite(data, length, 1, ros_io);
+}
+
+/* Ordering of parameters to this function is non-intuitive, see replacement above */
+__depricated
 void Ros::send(uint8_t * data, uint16_t length, char packet_type, char topicID)
 {
-
-	fputc(packet_type, ros_io);
-
-	//send msg ID
-	fputc(topicID, ros_io);
-	//send length of message to aid in io code on other side
-	fwrite(&length, 2, 1, ros_io);
-
-	fwrite(data, length, 1, ros_io);
+	send_pkt(packet_type, topicID, data, length);
 }
 
 void Ros::getID()
 {
-	uint16_t size = this->name.serialize(ros.outBuffer);
-	this->send(outBuffer, size, 255, 0);
+	uint16_t size = this->name.serialize(this->outBuffer);
+	this->send_pkt(PT_GETID, 0, this->outBuffer, size);
 }
 
 Ros::~Ros()
-{
-	// TODO Auto-generated destructor stub
-}
+{}

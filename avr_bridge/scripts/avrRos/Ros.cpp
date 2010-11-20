@@ -34,7 +34,8 @@ int uart_getchar(FILE * stream)
 	return Serial.read();
 }
 
-FILE *ros_io = fdevopen(uart_putchar, uart_getchar);
+FILE ros_io_ = FDEV_SETUP_STREAM(uart_putchar, uart_getchar, _FDEV_SETUP_RW);
+FILE *ros_io = &ros_io_;
 
 Ros::Ros(char *node_name):name(node_name)
 {

@@ -9,6 +9,7 @@
 #include "string.h"
 #include "WProgram.h"
 
+#include <base_io.h>
 #include <stdio.h>
 
 void initRos()
@@ -23,32 +24,13 @@ void initRos()
 	}
 }
 
-int uart_putchar(char c, FILE * stream)
-{
-	Serial.write(c);
-	return 0;
-}
-
-int uart_getchar(FILE * stream)
-{
-	return Serial.read();
-}
-
-FILE ros_io_ = FDEV_SETUP_STREAM(uart_putchar, uart_getchar, _FDEV_SETUP_RW);
-FILE *ros_io = &ros_io_;
-
-Ros::Ros(char *node_name):name(node_name)
-{
-	// TODO Auto-generated constructor stub
-	//this->node_name = name;
-
-	this->packet_data_left = 0;
-	this->buffer_index = 0;
-	this->header = (packet_header *) this->buffer;
-	//this->cb_list[0] = getID;
-	this->com_state = header_state;
-
-}
+Ros::Ros(char *node_name, FILE *stream)
+	: name(node_name)
+	, packet_data_left(0)
+	, buffer_index(0)
+	, header(buffer)
+	, com_state(header_state)
+{}
 
 void Ros::subscribe(char *topic, ros_cb funct, Msg * msg)
 {
@@ -73,7 +55,7 @@ void Ros::resetStateMachine()
 void Ros::spin()
 {
 
-	int com_byte = uart_getchar(ros_io);
+	int com_byte = getc(ros_io);
 
 	while (com_byte != -1) {
 		buffer[buffer_index] = com_byte;
@@ -108,7 +90,7 @@ void Ros::spin()
 			}
 		}
 
-		com_byte = uart_getchar(ros_io);
+		com_byte = getc(ros_io);
 	}
 }
 

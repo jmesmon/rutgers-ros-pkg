@@ -333,7 +333,7 @@ uint8_t Ros::getTopicTag(char * topic)
 		return %d;
 """%(topic, ID))
 
-                f.write("""
+            f.write("""
 	return 0;
 }
 

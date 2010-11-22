@@ -48,8 +48,10 @@ public:
 private:
 	void processPkt(struct packet_header *ptk);
 	void getID(void);
-	char getTopicTag(char * topic); //Used to get the topic tag for its packet
+	uint8_t getTopicTag(char * topic);
 
+	/* These are all indexed by the same item */
+	/* FIXME: determine count at compile time rather than fixing @ 10 */
 	char* topic_list[10];
 	ros_cb cb_list[10];
 	Msg * msg_list[10];

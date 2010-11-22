@@ -4,6 +4,11 @@
 
 #include "base_io.h"
 
+void ros_io_init(void)
+{
+	Serial.begin(57600);
+}
+
 static int uart_putchar(char c, FILE * stream)
 {
 	Serial.write(c);

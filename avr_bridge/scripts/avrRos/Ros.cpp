@@ -12,14 +12,21 @@
 #include <base_io.h>
 #include <stdio.h>
 
-void initRos()
+void ros_init()
 {
-	//Set up the serial communicaton and wait a bit to make sure
-	//that the program and grab its id before we go into any other
-	//set up routines
-	Serial.begin(57600);
-	for (int i; i < 100; i++) {
+	/* FIXME: should io initialization be preformed by non-avrRos code? */
+	ros_io_init();
+
+	/* FIXME: this doesn't actually make sure the pc side grabs the ID, and it
+	 * is unclear that waiting for said grabbing has any benifit */
+
+	/* make sure that the program can grab the avr's id before we go into any
+	 * other setup routines */
+	uint8_t i;
+	for (i = 0; i < 100; i++) {
 		ros.spin();
+
+		/* FIXME: arduino specific */
 		delay(10);
 	}
 }

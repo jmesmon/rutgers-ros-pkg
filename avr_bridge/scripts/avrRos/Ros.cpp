@@ -43,7 +43,7 @@ void Ros::subscribe(char *topic, ros_cb funct, Msg * msg)
 {
 	int tag = getTopicTag(topic);
 	this->cb_list[tag] = funct;
-	this->msgList[tag] = msg;
+	this->msg_list[tag] = msg;
 }
 
 void Ros::publish(Publisher pub, Msg * msg)
@@ -59,6 +59,26 @@ void Ros::resetStateMachine()
 	com_state = header_state;
 }
 
+void Ros::processPkt(struct packet_header *header)
+{
+	switch(header->packet_type) {
+	case PT_TOPIC:
+		//ie its a valid topic tag
+		//then deserialize the msg
+		this->msg_list[header->topic_tag]->
+				deserialize(header->data);
+		//call the registered callback function
+		this->cb_list[header->topic_tag](this->
+				msg_list[header->topic_tag]);
+		break;
+	case PT_SERVICE:
+		break;
+	case PT_GETID:
+		this->getID();
+		break;
+	}
+}
+
 void Ros::spin()
 {
 	int com_byte = getc(ros_io);
@@ -72,29 +92,11 @@ void Ros::spin()
 				com_state = msg_data_state;
 				this->packet_data_left = header->msg_length;
 			}
-		}
-		if (com_state == msg_data_state) {
+		} else if (com_state == msg_data_state) {
 			packet_data_left--;
 			if (packet_data_left <= 0) {
 				resetStateMachine();
-				switch(header->packet_type) {
-				case PT_TOPIC:
-					//ie its a valid topic tag
-					//then deserialize the msg
-					this->msgList[header->topic_tag]->
-					    deserialize(buffer + 4);
-					//call the registered callback function
-					this->cb_list[header->topic_tag](this->
-									  msgList
-									  [header->
-									   topic_tag]);
-					break;
-				case PT_SERVICE:
-					break;
-				case PT_GETID:
-					this->getID();
-					break;
-				}
+				processPkt(header);
 			}
 		}
 

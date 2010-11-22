@@ -13,6 +13,7 @@ struct packet_header {
 
 	uint8_t topic_tag;
 	uint16_t msg_length;
+	uint8_t data[];
 } __packed;
 
 

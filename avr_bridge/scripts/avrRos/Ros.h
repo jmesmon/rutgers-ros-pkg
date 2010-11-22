@@ -32,7 +32,7 @@ public:
 	void spin(void);
 
 	/* handles actually sending the data */
-	void send_pkt(uint8_t pkt_type, uint8_t topic_id,
+	void sendPkt(uint8_t pkt_type, uint8_t topic_id,
 	              uint8_t* data, uint16_t length);
 
 	/* depricated due to unintuitive argument ordering */
@@ -40,31 +40,32 @@ public:
 	void send(uint8_t* data, uint16_t length,
 	          char packet_type, char topicID);
 
-	ROS::string name;
-	uint8_t outBuffer[300];
-
 	~Ros();
+
+	ROS::string name;
+	uint8_t outBuffer[UINT8_MAX + 1];
+
 private:
+	void processPkt(struct packet_header *ptk);
+	void getID(void);
+	char getTopicTag(char * topic); //Used to get the topic tag for its packet
+
 	char* topic_list[10];
 	ros_cb cb_list[10];
-	Msg * msgList[10];
+	Msg * msg_list[10];
 
-	void getID(void);
-
-	char getTopicTag(char * topic); //Used to get the topic tag for its packet
 	//variables for handling incoming packets
+	void resetStateMachine(void);
 
 	packet_header * header;
-	int packet_data_left;
-	uint8_t buffer[300];
-	uint16_t buffer_index;
+	uint8_t packet_data_left;
+	uint8_t buffer[UINT8_MAX + 1];
+	uint8_t buffer_index;
 
 	enum packet_state {
 		header_state,
 		msg_data_state
 	} com_state;
-
-	void resetStateMachine(void);
 };
 
 extern Ros ros;

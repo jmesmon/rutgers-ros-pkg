@@ -14,70 +14,90 @@ using namespace ROS;
 
 
 string::string(void)
+	: _buffer(new char[1]),
+	  _buffer_len(1),
+	  _length_str(0)
 {
-	maxlength = 0;
+	_buffer[0] = '\0';
 }
 
-string::string(uint16_t maxLength)
+string::string(size_t length_str)
+	: _buffer(new char[length_str + 1]),
+	  _buffer_len(length_str + 1),
+	  _length_str(0)
 {
-	maxLength=0;
-	this->setMaxLength(maxLength);
+	_buffer[0] = '\0';
 }
 
-void string::setMaxLength( uint16_t maxLength)
+string::string(char const *str)
 {
-	if (this->maxlength == 0){
-		data = (char*) malloc(maxLength+1);
-		this->maxlength = maxLength;
+	_length_str = strlen(str);
+	_buffer_len = _length_str + 1;
+	_buffer     = new char[_buffer_len];
+	strcpy(_buffer, str, _length_str + 1);
+}
+
+string::~string(void)
+{
+	delete[] m_buffer;
+}
+
+void string::setString(char const *str)
+{
+	_length_str = strlen(str);
+
+	// Check for a buffer overflow from the new string.
+	if (_length_str + 1 > _buffer_len) {
+		_length_str = _buffer_len - 1;
 	}
+	memcpy(_buffer, str, _length_str + 1);
 }
 
-string::string(char * str)
+void string::setMaxLength(uint16_t length_str)
 {
-	this->setString(str);
-}
-
-void string::setString(char * str)
-{
-	int l = strlen(str);
-
-	if (maxlength == 0) {
-		setMaxLength(l);
-	}
-
-	l = (l > maxlength) ? maxlength : l;
-	strncpy(this->data,str,l);
-}
-
-uint16_t string::serialize(uint8_t *buffer)
-{
-	uint32_t length = strlen(data);
-	memcpy(buffer, &length, 4);
-	memcpy(buffer + 4, data, length);
-	return length + 4;
-}
-
-uint16_t string::deserialize(uint8_t *buffer)
-{
-	uint32_t length;
-	memcpy(&length, buffer,4);
-
-	//deal with the overflow quietly, just take as much as possible
-	if (length > maxlength) {
-		memcpy(data, buffer + 4, maxlength);
-		data[maxlength] = 0;
-	} else{
-		memcpy(data, buffer + 4, length);
-		data[length + 1] =0;
+	// Expand the buffer without losing its content.
+	if (length_str > _buffer_len) {
+		char *buffer_new = new char[length_str + 1];
+		memcpy(buffer_new, _buffer, _buffer_len);
+		delete[] _buffer;
+		_buffer = buffer_new;
 	}
 
-	//add null terminating charater
-	return length + 4;
+	// Force the smaller buffer to be null-terminated.
+	if (length_str < _length_str) {
+		_buffer[length_str] = 0;
+		_length_str         = length_str;
+	}
+
+	_buffer_len = length_str + 1;
 }
 
-uint16_t string::bytes()
+size_t string::serialize(uint8_t *buffer)
 {
-	uint32_t length = strlen(data);
-	return length + 4;
+	uint32_t length_str = (uint32_t)_length_str;
+	memcpy(buffer, &length_str, sizeof(uint32_t));
+	memcpy(buffer + 4, _buffer, _length_str);
+	return _length_str + 4;
+}
+
+size_t string::deserialize(uint8_t const *buffer)
+{
+	uint32_t length_str;
+	memcpy(&length_str, buffer, sizeof(uint32_t));
+	_length_str = (size_t)length_str;
+
+	// Quietly deal with overflow by taking as much as possible.
+	if (length + 1 > _buffer_len) {
+		_length_str = _buffer_len - 1;
+	}
+
+	memcpy(_buffer, buffer, _length_str + 1);
+	_buffer[_length_str] = '\0';
+	return length_str + 4;
+}
+
+size_t string::bytes()
+{
+	return _length_str + 4;
 }
 

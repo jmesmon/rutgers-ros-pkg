@@ -16,20 +16,22 @@ namespace ROS {
 class string {
 public:
 	string(void);
-	string(uint16_t maxLength);
-	string(char *str);
+	string(size_t len);
+	string(char const *str);
+	virtual ~string(void);
 
-	void setString(char *str);
-	uint16_t bytes(void);
-	uint16_t serialize(uint8_t *buffer);
-	uint16_t deserialize(uint8_t *buffer);
+	void setString(char const *str);
+	size_t bytes(void);
+	size_t serialize(uint8_t *buffer);
+	size_t deserialize(uint8_t const* buffer);
 	char operator[](int i){ return data[i];};
 	char *operator&(void) { return data;};
 	void setMaxLength(uint16_t maxLength);
 
 private:
-	char *data;
-	uint16_t maxlength;
+	char  *_buffer;
+	size_t _buffer_len;
+	size_t _string_len;
 };
 
 }

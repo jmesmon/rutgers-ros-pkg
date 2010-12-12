@@ -84,6 +84,10 @@ void Ros::spin()
 	int com_byte = getc(ros_io);
 
 	while (com_byte != -1) {
+		//If the buffer index is about to over flow, or it hasnt been reset in a long time..
+		if (buffer_index > ROS_BUFFER_SIZE) buffer_index=0;
+		if ( (millis() - packet_start) > 30) {buffer_index=0; packet_start=millis();}
+
 		buffer[buffer_index] = com_byte;
 		buffer_index++;
 
@@ -91,10 +95,11 @@ void Ros::spin()
 			if (buffer_index == sizeof(packet_header)) {
 				com_state = msg_data_state;
 				this->packet_data_left = header->msg_length;
+				packet_start = millis();
 			}
 		} else if (com_state == msg_data_state) {
 			packet_data_left--;
-			if (packet_data_left <= 0) {
+			if (packet_data_left < 0) {
 				resetStateMachine();
 				processPkt(header);
 			}

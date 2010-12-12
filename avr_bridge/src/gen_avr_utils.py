@@ -115,28 +115,28 @@ def write_header_file(f, msg_name, pkg, msg_spec):
 
 """%(guard, guard))
 
-    #write includes
-    for field in msg_spec.parsed_fields():
-        if not field.is_builtin:
-            incPkg, incName = extract_ros_type(field)
-            f.write('#include "%s.h"\n'%(incName))
+	#write includes
+	for field in msg_spec.parsed_fields():
+		if not field.is_builtin:
+			incPkg, incName = extract_ros_type(field)
+			f.write('#include "%s.h"\n'%(incName))
+	
 
-    #open namespace
-    f.write('\n\nnamespace %s {\n'%pkg)
+	
+	#open namespace
+	f.write('\n\nnamespace %s {\n'%pkg)
+	
 
-    f.write("""
-class %s : public Msg {
-	public:
-"""%msg_name)
+	f.write("class %s : public Msg{\n   public:\n"%msg_name)
+	
+	f.write('\t%s();\n'%msg_name);
+	f.write('\t%s(uint8_t * data);\n'%msg_name);
+	f.write('\t~%s();\n'%msg_name);
+	f.write("""
+	virtual uint16_t bytes();
+	virtual uint16_t serialize(uint8_t * out_buffer);
+	virtual uint16_t deserialize(uint8_t * data);
 
-    f.write('\t%s();\n'%msg_name);
-    f.write('\t%s(uint8_t * data);\n'%msg_name);
-    f.write('\t~%s();\n'%msg_name);
-
-    f.write("""
-	uint16_t bytes();
-	uint16_t serialize(uint8_t * out_buffer);
-	uint16_t deserialize(uint8_t * data);
 """)
 
     #write msg fields

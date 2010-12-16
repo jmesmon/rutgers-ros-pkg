@@ -34,7 +34,7 @@ string::string(char const *str)
 	_length_str = strlen(str);
 	_buffer_len = _length_str + 1;
 	_buffer     = new char[_buffer_len];
-	strcpy(_buffer, str, _length_str + 1);
+	memcpy(_buffer, str, _length_str + 1);
 }
 
 string::~string(void)

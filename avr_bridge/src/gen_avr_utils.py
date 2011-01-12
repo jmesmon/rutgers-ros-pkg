@@ -2,12 +2,46 @@
 # vim: ts=4:sw=4:noet:ai
 
 """
-AVR code generator for ROS topics.  This generates AVR source code
-so that the avr can communicate with the
+AVR code generator for ROS topics.  This utilities are used to generate
+the avr source code to communicate with the ros avr bridge.  
 
-Converts ROS .msg files in a package into Python source code implementations.
+by Adam Stambler of Rutger University.
 
-arrays have an unsigned integer specifying the number of units in the array
+This software was written with support of a research grant (R01ES014717)
+ from the National Institute of Environmental Health Sciences.  
+
+# Software License Agreement (BSD License)
+#
+# Copyright (c) 2011, Adam Stambler
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+#  * Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#  * Redistributions in binary form must reproduce the above
+#    copyright notice, this list of conditions and the following
+#    disclaimer in the documentation and/or other materials provided
+#    with the distribution.
+#  * Neither the name of Adam Stambler, Inc. nor the names of its
+#    contributors may be used to endorse or promote products derived
+#    from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
 """
 import roslib; roslib.load_manifest('avr_bridge')
 
@@ -16,11 +50,8 @@ import shutil
 import os
 import traceback
 
-# roslib.msgs contains the utilities for parsing .msg specifications.
-# It is meant to have no rospy-specific knowledge
-import roslib.msgs
-import roslib.packages
-
+import roslib.msgs 
+import roslib.packages 
 
 import roslib.genpy
 import yaml
@@ -70,9 +101,8 @@ def serialize_primative(f, buffer_addr, field):
 		f.write('offset += this->%s.serialize(%s + offset);\n'%(field.name, buffer_addr))
 	else:
 		f.write("*( (%s *) (%s + offset))=  this->%s; \n"%(ctype, buffer_addr, field.name) )
-		f.write('offset += %d;\n'%(clen))
-
-
+		f.write('offset += %d;\n'%(clen)) 
+		
 def deserialize_primative(f, buffer_addr, field):
 	"""
 	Generate c code to deserialize a rosmsg field of type ctype from
@@ -133,9 +163,9 @@ def write_header_file(f, msg_name, pkg, msg_spec):
 	f.write('\t%s(uint8_t * data);\n'%msg_name);
 	f.write('\t~%s();\n'%msg_name);
 	f.write("""
-	virtual uint16_t bytes();
-	virtual uint16_t serialize(uint8_t * out_buffer);
-	virtual uint16_t deserialize(uint8_t * data);
+	uint16_t bytes();
+	uint16_t serialize(uint8_t * out_buffer);
+	uint16_t deserialize(uint8_t * data);
 
 """)
 
@@ -190,6 +220,14 @@ def deserialize_msg(f, msg_spec):
 
 
 def msg_size(f, msg_spec):
+	"""
+This function writes out the bytes() member function for a msg.  
+It iterates through the msg fields and extracts either their size if 
+they are a primative type, or calls the bytes of that msg.
+
+	@param f :  output file object
+	@param msg_spec : the msg_spec of the msg
+	"""
 	f.write('\n int msgSize=0;\n')
 
 	for field in msg_spec.parsed_fields():
@@ -204,6 +242,13 @@ def msg_size(f, msg_spec):
 
 
 def write_cpp(f, msg_name, pkg, msg_spec):
+	"""
+		Generates the msg cpp implementation file
+		@param f : output file object
+		@param msg_name : name of msg type
+		@param pkg : pkg that the message is found in
+		@param msg_spec : msg_spec object of the msg
+	"""
 	f.write('#include "%s.h"\n'%msg_name)
 	f.write('#include <stdio.h>\n')
 
@@ -238,6 +283,10 @@ def write_cpp(f, msg_name, pkg, msg_spec):
 
 
 class CGenerator():
+	"""
+	Class responsible for generating the c++ files from the yaml 
+	configuration file.
+	"""
 	def __init__(self):
 		self.types = [] #contains list of distinct types
 						#each type will generate a .h and .cpp file
@@ -249,8 +298,10 @@ class CGenerator():
 		self.config = None
 
 	def parseConfig(self, configFile):
-		#takes a file like object of configuration yaml
-
+		"""
+			Takes a file like object of the yaml configuration 
+		"""
+		
 		self.config = yaml.load(configFile)
 
 		#services get their topic id first
@@ -300,21 +351,28 @@ class CGenerator():
 
 			#now that we are done adding the base msg type, we need to
 			#recursively add all the types defined within it
-			for type in msg_spec.types:
-				if type[-1] == ']': #strip away array markers
-					type = type[0:type.find('[')]
+			for msgType in msg_spec.types:
+				if msgType[-1] == ']': #strip away array markers
+					msgType = msgType[0:msgType.find('[')]
 
-				if type == 'Header':
+				if msgType == 'Header':
 					self.addMsg('roslib', 'Header')
-				elif primatives.has_key(type) or type== 'string':
+				elif primatives.has_key(msgType) or msgType== 'string':
 					pass
 				else:
-					tpkg, tmsg = type.split('/')
+					print "The msg type is ", msgType
+					tpkg, tmsg = msgType.split('/')
 					self.addMsg(tpkg, tmsg)
+
+
 	def generateRos(self, folderPath):
-
+		""" 
+	This function generates to ros_generated.cpp file.
+	This file contains the getTopicTag implementation along with
+	the instantiation of the ros object.
+		"""
 		f = open(folderPath+'/ros_generated.cpp', 'w');
-
+		
 		f.write("""
 /* AUTOGENERATED by avr_bridge
  *
@@ -339,7 +397,7 @@ uint8_t Ros::getTopicTag(char * topic)
 
 """)
 
-		f.write('Ros ros("%s"); //autogenerated Ros object'%self.config['port'])
+		f.write('Ros ros("%s", %d); //autogenerated Ros object'%(self.config['name'], len(self.topicIds) ))
 		f.close()
 
 

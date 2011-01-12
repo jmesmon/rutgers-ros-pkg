@@ -12,8 +12,15 @@
 
 class Msg {
 public:
-	virtual Msg() = 0;
-	virtual Msg(uint8_t* data) = 0;
+	Msg();
+	Msg(uint8_t* data);
+	virtual uint16_t serialize(uint8_t * outbuffer)=0;
+	virtual uint16_t deserialize(uint8_t * data)=0;
+	virtual uint16_t bytes()=0;
+	 ~Msg();
+private:
+	char * _buffer;
+	int _length; //length of byte stream;
 
 	/* returns the length of the serialized data.
 	 * XXX: UNSAFE: outbuffer cannot be not length checked

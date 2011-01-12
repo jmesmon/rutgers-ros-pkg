@@ -1,12 +1,12 @@
 
-#include "WProgram.h"
+#include "libarduino2.h"
 #include <stdio.h>
 
 #include "base_io.h"
 
 void ros_io_init(void)
 {
-	Serial.begin(57600);
+	serial_init();
 }
 
 static int uart_putchar(char c, FILE * stream)

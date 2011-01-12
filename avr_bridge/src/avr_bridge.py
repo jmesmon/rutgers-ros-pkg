@@ -18,7 +18,7 @@ import time
 """
 At start up I need to read through the message definitions, and generate
 """
-debug_packets = True
+debug_packets = False
 
 class AvrBridge():
 	"""
@@ -174,10 +174,12 @@ class AvrBridge():
 		if not self.port.isOpen():
 			return None, None, 0, []
 		header = self.port.read(4)
+		
 		if not (len(header) == 4) :
 			self.port.flushOutput()
 			self.port.flushInput()
 			return None, None, 0, []
+		
 		packet_type, topic_tag, data_length = self.header_struct.unpack(header)
 		msg_data = self.port.read(data_length)
 		return packet_type, topic_tag, data_length, msg_data
@@ -252,16 +254,16 @@ class AvrBridge():
 			raise "Both Topic and Tag cannot be None"
 		if (tag == None):
 			tag =  self.topic_tags[topic]
-		
+				
 		buffer = StringIO.StringIO()
 		msg.serialize(buffer)
 		
-		msg_data = buffer.read()
+		msg_data = buffer.getvalue()
 		msg_length = len(msg_data)
 		
 		header = self.header_struct.pack(rtype,tag, msg_length)
 		if debug_packets:
-			print "header " , pretty_data(header), "data " , pretty_data(msg_data)
+			print "Sending :  header " , pretty_data(header), "data " , pretty_data(msg_data)
 		self.port.write(header)
 		self.port.write(msg_data)
 		time.sleep(0.02)
@@ -271,13 +273,13 @@ class AvrBridge():
 		t = 0
 		self.sendAVR(std_msgs.msg.Empty(), rtype = 255, tag=0)
 		while (self.name == None):
-			time.sleep(0.03)
+			time.sleep(0.04)
 			t = t+1
-			if (t >5):
-				self.sendAVR(std_msgs.msg.Empty(), rtype = 255, tag=0)
 			if (t >10):
 				self.sendAVR(std_msgs.msg.Empty(), rtype = 255, tag=0)
-			if (t > 15):
+			if (t >15):
+				self.sendAVR(std_msgs.msg.Empty(), rtype = 255, tag=0)
+			if (t > 20):
 				return None
 		return self.name
 

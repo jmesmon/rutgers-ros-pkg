@@ -14,6 +14,7 @@
 #include "ros_packet.h"
 #include "compiler.h"
 
+#define ROS_BUFFER_SIZE (UINT8_MAX + 1)
 typedef void (*ros_cb)(Msg* msg);
 
 
@@ -60,9 +61,12 @@ private:
 	void resetStateMachine(void);
 
 	packet_header * header;
+
 	uint8_t packet_data_left;
-	uint8_t buffer[UINT8_MAX + 1];
+	uint8_t buffer[ROS_BUFFER_SIZE];
 	uint8_t buffer_index;
+
+	unsigned long packet_start;
 
 	enum packet_state {
 		header_state,

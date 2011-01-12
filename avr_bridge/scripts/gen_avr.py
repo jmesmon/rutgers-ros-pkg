@@ -10,7 +10,8 @@ Converts ROS .msg files in a package into Python source code implementations.
 arrays have an unsigned integer specifying the number of units in the array
 
 """
-import roslib; roslib.load_manifest('avr_bridge')
+import roslib
+roslib.load_manifest('avr_bridge')
 
 import sys
 import shutil
